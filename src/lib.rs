@@ -1,5 +1,7 @@
+use chrono;
 use regex::Regex;
 use reqwest::{Client, Error};
+use std::{thread, time};
 
 pub struct Camera {
     pub ip: String,
@@ -75,6 +77,58 @@ impl Camera {
         Ok(cars)
     }
 
+    /// Add number to camera
+    /// allowed symbols for number: ABCEHKMOPTXY0-9
+    /// dates format 2023-11-22
+    pub async fn add(&self, car: &Car) -> Result<String, Error> {
+        let base_url = &self.base_url().await;
+        let url = format!(
+            "{}/lnpr_cgi?action=add&Number={}&Begin={}&End={}",
+            base_url, car.number, car.begin_date, car.end_date,
+        );
+        let response = &self.get_response(&url).await?;
+        Ok(response.to_string())
+    }
+
+    /// Edit number in camera
+    /// allowed symbols: ABCEHKMOPTXY0-9
+    pub async fn edit(&self, car: &Car) -> Result<String, Error> {
+        let base_url = &self.base_url().await;
+        let url = format!(
+            "{}/lnpr_cgi?action=edit&Number={}&Begin={}&End={}",
+            base_url, car.number, car.begin_date, car.end_date,
+        );
+        let response = &self.get_response(&url).await?;
+        Ok(response.to_string())
+    }
+
+    /// Remove number from camera
+    /// allowed symbols: ABCEHKMOPTXY0-9
+    pub async fn remove(&self, car: &Car) -> Result<String, Error> {
+        let base_url = &self.base_url().await;
+        let url = format!("{}/lnpr_cgi?action=remove&Number={}", base_url, car.number);
+        let response = &self.get_response(&url).await?;
+        Ok(response.to_string())
+    }
+
+    /// Remove all numbers by end_date
+    pub async fn remove_cars(&self, mut end_date: String) -> Result<(), Error> {
+        if end_date.is_empty() {
+            end_date = chrono::offset::Local::now().format("%Y-%m-%d").to_string();
+        }
+
+        let cars = &self.list_numbers().await?;
+                println!("CRON JOB: удаление номеров автомобилей за текущий день");
+                for car in cars {
+                    if car.end_date == end_date {
+                        let _ = &self.remove(car).await?;
+                        println!("Номер {} удален", car.number);
+                        thread::sleep(time::Duration::from_millis(500));
+                    }
+                }
+        Ok(())
+    }
+
     /// Send request to camera and get response
     /// For request need set base_auth
     async fn get_response(&self, url: &str) -> Result<String, Error> {
@@ -90,10 +144,10 @@ impl Camera {
                 return Ok(response.text().await?);
             }
             reqwest::StatusCode::UNAUTHORIZED => {
-                println!("Unauthorized");
+                println!("Вы не авторизованы");
             }
             _ => {
-                panic!("Uh oh! Something unexpected happened.");
+                panic!("Произошла ошибка");
             }
         };
         Ok(response.text().await?)
