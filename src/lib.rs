@@ -17,6 +17,19 @@ pub struct Car {
 }
 
 impl Camera {
+    pub fn new() -> Self {
+        let ip = get_env_var("CAMERA_IP");
+        let username = get_env_var("CAMERA_USERNAME");
+        let password = get_env_var("CAMERA_PASSWORD");
+
+        let camera = Camera {
+            ip,
+            password,
+            username,
+        };
+
+        camera
+    }
     /// Get all numbers from camera cars numbers.
     ///
     /// Number111=carNumber
@@ -153,4 +166,8 @@ fn find_digits(string: &str) -> Vec<usize> {
         .collect();
 
     submatch_all
+}
+
+fn get_env_var(var_name: &str) -> String {
+    std::env::var(var_name).unwrap_or_else(|_| panic!("Переменная {} не найдена", var_name))
 }
