@@ -25,10 +25,11 @@ impl Camera {
 
     /// Get all numbers from camera in raw camera format four lines for one
     /// car number.
-    /// Number<sequence>=carNumber
-    /// Begin<sequence>=2020-12-22
-    /// End<sequence>=2020-12-22
-    /// Notify<sequence>=on | off
+    /// Number111=carNumber
+    /// Begin111=2020-12-22
+    /// End111=2020-12-22
+    /// Notify111=on | off
+    /// 111 - sequence number in camera
     ///
     /// GET request
     /// http://192.168.1.1/cgi-bin/lnpr_cgi?action=list
