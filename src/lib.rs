@@ -1,6 +1,7 @@
+use chrono::offset::Local;
 use regex::Regex;
 use reqwest::{blocking::Client, Error};
-use std::{thread, time};
+use std::{process::exit, thread, time};
 
 pub struct Camera {
     pub ip: String,
@@ -8,7 +9,6 @@ pub struct Camera {
     pub password: String,
 }
 
-#[derive(Debug)]
 pub struct Car {
     pub number: String,
     pub begin_date: String,
@@ -29,13 +29,7 @@ impl Camera {
 
         camera
     }
-    /// Get all numbers from camera cars numbers.
-    ///
-    /// Number111=carNumber
-    /// Begin111=2020-12-22
-    /// End111=2020-12-22
-    /// Notify111=on | off
-    /// 111 - sequence number in camera
+    /// Get all cars numbers from camera.
     pub fn list_numbers(&self) -> Result<Vec<Car>, Error> {
         let path = "/lnpr_cgi?action=list";
         let raw_cars_list = &self.get_response(&path)?;
@@ -48,35 +42,43 @@ impl Camera {
     /// Add number to camera
     /// allowed symbols for number: ABCEHKMOPTXY0-9
     /// dates format 2023-11-22
-    pub fn add(&self, car: &Car) -> Result<String, Error> {
+    pub fn add(&self, car: &mut Car) -> Result<String, Error> {
+        if car.begin_date.is_empty() || car.end_date.is_empty() {
+            car.begin_date = Local::now().format("%Y-%m-%d").to_string();
+            car.end_date = Local::now().format("%Y-%m-%d").to_string();
+        }
+
         let path = format!(
             "/lnpr_cgi?action=add&Number={}&Begin={}&End={}",
             car.number, car.begin_date, car.end_date,
         );
         let response = &self.get_response(&path)?;
-        Ok(response.to_string())
+        Ok(response.trim().to_string())
     }
 
     /// Edit number in camera
-    /// allowed symbols: ABCEHKMOPTXY0-9
+    /// allowed symbols for number: ABCEHKMOPTXY0-9,
+    /// dates format 2023-11-22
     pub fn edit(&self, car: &Car) -> Result<String, Error> {
         let path = format!(
             "/lnpr_cgi?action=edit&Number={}&Begin={}&End={}",
             car.number, car.begin_date, car.end_date,
         );
         let response = &self.get_response(&path)?;
-        Ok(response.to_string())
+        Ok(response.trim().to_string())
     }
 
     /// Remove number from camera
-    /// allowed symbols: ABCEHKMOPTXY0-9
+    /// allowed symbols for number: ABCEHKMOPTXY0-9,
+    /// dates format 2023-11-22
     pub fn remove(&self, car: &Car) -> Result<String, Error> {
         let path = format!("/lnpr_cgi?action=remove&Number={}", car.number);
         let response = &self.get_response(&path)?;
-        Ok(response.to_string())
+        Ok(response.trim().to_string())
     }
 
-    /// Remove all numbers by end_date
+    /// Remove all numbers by end_date,
+    /// dates format 2023-11-22
     pub fn remove_cars(&self, end_date: String) -> Result<String, Error> {
         let cars = self.list_numbers()?;
         println!("CRON JOB: удаление номеров автомобилей за текущий день");
@@ -90,6 +92,13 @@ impl Camera {
         Ok("Удаление номеров закончено".to_string())
     }
 
+    /// Parsing raw cars list
+    ///
+    /// Number111=carNumber
+    /// Begin111=2020-12-22
+    /// End111=2020-12-22
+    /// Notify111=on | off
+    /// 111 - sequence number in camera
     fn parse_raw_cars_list(&self, raw_cars_list: &str) -> Result<Vec<Car>, Error> {
         let strings: Vec<&str> = raw_cars_list.split("\n").collect();
         let mut cars: Vec<Car> = vec![];
@@ -129,7 +138,7 @@ impl Camera {
         Ok(cars)
     }
 
-    pub fn get_response(&self, path: &str) -> Result<String, Error> {
+    fn get_response(&self, path: &str) -> Result<String, Error> {
         let base_path = format!("http://{}/cgi-bin", &self.ip);
         let url = format!("{}{}", base_path, path);
 
@@ -145,16 +154,18 @@ impl Camera {
                 return Ok(response.text()?);
             }
             reqwest::StatusCode::UNAUTHORIZED => {
-                println!("Вы не авторизованы");
+                eprintln!("вы не авторизованы");
             }
             _ => {
-                panic!("Произошла ошибка");
+                eprintln!("произошла ошибка: {}", response.text()?);
+                exit(1);
             }
         };
         Ok(response.text()?)
     }
 }
 
+/// Finding digit in string
 fn find_digits(string: &str) -> Vec<usize> {
     let re_sequence = Regex::new(r"[-]?\d[\d,]*[\.]?[\d{1}]*").unwrap();
     let submatch_all: Vec<usize> = re_sequence
@@ -166,5 +177,5 @@ fn find_digits(string: &str) -> Vec<usize> {
 }
 
 fn get_env_var(var_name: &str) -> String {
-    std::env::var(var_name).unwrap_or_else(|_| panic!("Переменная {} не найдена", var_name))
+    std::env::var(var_name).unwrap_or_else(|_| panic!("переменная {} не найдена", var_name))
 }

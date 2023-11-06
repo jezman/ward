@@ -1,17 +1,30 @@
-use std::env;
+use std::{env, process::exit};
 use ward::{Camera, Car};
 
 fn help() {
-    println!(
-        "Использование:
+    println!("
+    #     #                      
+    #  #  #   ##   #####  #####  
+    #  #  #  #  #  #    # #    # 
+    #  #  # #    # #    # #    # 
+    #  #  # ###### #####  #    # 
+    #  #  # #    # #   #  #    # 
+     ## ##  #    # #    # #####  
+                                     
+Управление номерами автомобилей для камеры Beward B2530RZQ-LP 
+
+Использование:
+
 ward list
     Список всех номеров в камере.
 ward clear 2023-11-22
     Удалить все номера на указанную дату.
+ward add X111XX777
+    Добавить номер на сегодня.
 ward remove X111XX777
     Удалить номер из камеры.
 ward add|edit X111XX777 2023-11-22 22-11-23
-    Добавить, редактировать номер."
+    Добавить или редактировать номер с указанными датами."
     );
 }
 
@@ -27,23 +40,25 @@ fn main() {
             let command = &args[1];
 
             match &command[..] {
-                "list" => {
-                    let cars = camera
-                        .list_numbers()
-                        .expect("не удалось получить список номеров");
+                "list" => match camera.list_numbers() {
+                    Ok(cars) => {
+                        println!("|№     | Номер авто      | Начало     | Конец      |");
 
-                    println!("|№     | Номер авто      | Начало     | Конец      |");
-
-                    for (i, car) in cars.iter().enumerate() {
-                        println!(
-                            "|{:<5} | {:<15} | {:^10} | {:^10} |",
-                            i + 1,
-                            car.number,
-                            car.begin_date,
-                            car.end_date
-                        )
+                        for (i, car) in cars.iter().enumerate() {
+                            println!(
+                                "|{:<5} | {:<15} | {:^10} | {:^10} |",
+                                i + 1,
+                                car.number,
+                                car.begin_date,
+                                car.end_date
+                            )
+                        }
                     }
-                }
+                    Err(err) => {
+                        eprintln!("не удалось получить список номеров\n{}", err);
+                        exit(1);
+                    }
+                },
                 "help" => help(),
                 _ => {
                     eprintln!("ошибка: неверная команда");
@@ -55,22 +70,30 @@ fn main() {
             let command = &args[1];
             let arg = &args[2].to_uppercase();
 
-            let car = Car {
+            let mut car = Car {
                 number: arg.to_string(),
                 begin_date: "".to_string(),
                 end_date: "".to_string(),
             };
 
             match &command[..] {
+                "add" => {
+                    if let Err(err) = camera.add(&mut car) {
+                        eprintln!("не удалось добавить номер\n{}", err);
+                        exit(1);
+                    }
+                }
                 "clear" => {
-                    let result = camera
-                        .remove_cars(arg.to_string())
-                        .expect("не удалось удалить номер");
-                    println!("{}", result.trim());
+                    if let Err(err) = camera.remove_cars(arg.to_string()) {
+                        eprintln!("не удалось удалить номер\n{}", err);
+                        exit(1);
+                    }
                 }
                 "remove" => {
-                    let result = camera.remove(&car).expect("не удадалось удалить номера");
-                    println!("{}", result.trim());
+                    if let Err(err) = camera.remove(&car) {
+                        eprintln!("не удадалось удалить номера\n{}", err);
+                        exit(1);
+                    }
                 }
                 _ => {
                     eprintln!("ошибка: неверная команда");
@@ -84,7 +107,7 @@ fn main() {
             let begin_date = &args[3];
             let end_date = &args[4];
 
-            let car = Car {
+            let mut car = Car {
                 number: number.to_string(),
                 begin_date: begin_date.to_string(),
                 end_date: end_date.to_string(),
@@ -92,12 +115,16 @@ fn main() {
 
             match &command[..] {
                 "add" => {
-                    let result = camera.add(&car).expect("не удалось добавить номер");
-                    println!("{}", result.trim());
+                    if let Err(err) = camera.add(&mut car) {
+                        eprintln!("не удалось добавить номер\n{}", err);
+                        exit(1);
+                    }
                 }
                 "edit" => {
-                    let result = camera.edit(&car).expect("не удалось отредактировать номер");
-                    println!("{}", result.trim());
+                    if let Err(err) = camera.edit(&car) {
+                        eprintln!("не удалось отредактировать номер\n{}", err);
+                        exit(1);
+                    }
                 }
                 "help" => help(),
                 _ => {
