@@ -1,6 +1,5 @@
-use ward::{Camera, Car};
-
 use std::env;
+use ward::{Camera, Car};
 
 fn help() {
     println!(
@@ -26,22 +25,23 @@ fn main() {
         }
         2 => {
             let command = &args[1];
+
             match &command[..] {
                 "list" => {
+                    let cars = camera
+                        .list_numbers()
+                        .expect("не удалось получить список номеров");
+
                     println!("|№     | Номер авто      | Начало     | Конец      |");
-                    match camera.list_numbers() {
-                        Ok(cars) => {
-                            for (i, car) in cars.iter().enumerate() {
-                                println!(
-                                    "|{:<5} | {:<15} | {:^10} | {:^10} |",
-                                    i + 1,
-                                    car.number,
-                                    car.begin_date,
-                                    car.end_date
-                                )
-                            }
-                        }
-                        Err(e) => println!("{}", e),
+
+                    for (i, car) in cars.iter().enumerate() {
+                        println!(
+                            "|{:<5} | {:<15} | {:^10} | {:^10} |",
+                            i + 1,
+                            car.number,
+                            car.begin_date,
+                            car.end_date
+                        )
                     }
                 }
                 "help" => help(),
@@ -63,17 +63,15 @@ fn main() {
 
             match &command[..] {
                 "clear" => {
-                    match camera.remove_cars(arg.to_string()) {
-                        Ok(r) => println!("{:?}", r),
-                        Err(e) => println!("{}", e),
-                    }
-                },
+                    let result = camera
+                        .remove_cars(arg.to_string())
+                        .expect("не удалось удалить номер");
+                    println!("{}", result.trim());
+                }
                 "remove" => {
-                    match camera.remove(&car)  {
-                        Ok(r) => println!("{:?}", r.trim()),
-                        Err(e) => println!("{}", e),
-                    }
-                },    
+                    let result = camera.remove(&car).expect("не удадалось удалить номера");
+                    println!("{}", result.trim());
+                }
                 _ => {
                     eprintln!("ошибка: неверная команда");
                     help();
@@ -91,20 +89,16 @@ fn main() {
                 begin_date: begin_date.to_string(),
                 end_date: end_date.to_string(),
             };
-            // parse the command
+
             match &command[..] {
                 "add" => {
-                    match camera.add(&car)  {
-                        Ok(r) => println!("{:?}", r.trim()),
-                        Err(e) => println!("{}", e),
-                    }
-                },    
+                    let result = camera.add(&car).expect("не удалось добавить номер");
+                    println!("{}", result.trim());
+                }
                 "edit" => {
-                    match camera.edit(&car)  {
-                        Ok(r) => println!("{:?}", r.trim()),
-                        Err(e) => println!("{}", e),
-                    }
-                },    
+                    let result = camera.edit(&car).expect("не удалось отредактировать номер");
+                    println!("{}", result.trim());
+                }
                 "help" => help(),
                 _ => {
                     eprintln!("ошибка: неверная команда");
@@ -112,9 +106,7 @@ fn main() {
                 }
             };
         }
-        // all the other cases
         _ => {
-            // show a help message
             help();
         }
     }
