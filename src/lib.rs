@@ -137,6 +137,7 @@ impl Camera {
         let response = client
             .get(url)
             .basic_auth(&self.username, Some(&self.password))
+            .timeout(std::time::Duration::from_millis(3000))
             .send()?;
 
         match response.status() {
