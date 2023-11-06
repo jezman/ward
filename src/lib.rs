@@ -1,4 +1,3 @@
-use chrono;
 use regex::Regex;
 use reqwest::{blocking::Client, Error};
 use std::{thread, time};
@@ -42,6 +41,7 @@ impl Camera {
         let raw_cars_list = &self.get_response(&path)?;
 
         let cars_list = self.parse_raw_cars_list(&raw_cars_list)?;
+
         Ok(cars_list)
     }
 
@@ -77,11 +77,7 @@ impl Camera {
     }
 
     /// Remove all numbers by end_date
-    pub fn remove_cars(&self, mut end_date: String) -> Result<(), Error> {
-        if end_date.is_empty() {
-            end_date = chrono::offset::Local::now().format("%Y-%m-%d").to_string();
-        }
-
+    pub fn remove_cars(&self, end_date: String) -> Result<String, Error> {
         let cars = self.list_numbers()?;
         println!("CRON JOB: удаление номеров автомобилей за текущий день");
         for car in cars {
@@ -91,7 +87,7 @@ impl Camera {
                 thread::sleep(time::Duration::from_millis(500));
             }
         }
-        Ok(())
+        Ok("Удаление номеров закончено".to_string())
     }
 
     fn parse_raw_cars_list(&self, raw_cars_list: &str) -> Result<Vec<Car>, Error> {
