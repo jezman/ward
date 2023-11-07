@@ -168,7 +168,7 @@ impl Camera {
 /// Finding digit in string
 fn find_digits(string: &str) -> Vec<usize> {
     let re_sequence = Regex::new(r"[-]?\d[\d,]*[\.]?[\d{1}]*").unwrap();
-    let submatch_all: Vec<usize> = re_sequence
+    let submatch_all = re_sequence
         .find_iter(string)
         .filter_map(|digit| digit.as_str().parse::<usize>().ok())
         .collect();
@@ -178,4 +178,63 @@ fn find_digits(string: &str) -> Vec<usize> {
 
 fn get_env_var(var_name: &str) -> String {
     std::env::var(var_name).unwrap_or_else(|_| panic!("переменная {} не найдена", var_name))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::env::{remove_var, set_var};
+    use {Camera, Car};
+
+    #[test]
+    fn test_find_digit() {
+        let raw_string = "Number111=carNumber";
+        let digit = find_digits(raw_string);
+        assert_eq!(digit[0], 111);
+    }
+    #[test]
+    fn test_get_env_var() {
+        set_var("WARD_TEST", "VALUE");
+        assert_eq!(get_env_var("WARD_TEST"), "VALUE");
+        remove_var("WARD_TEST");
+    }
+
+    #[test]
+    fn add_car_success() {
+        let camera = Camera::new();
+        let mut car = Car {
+            number: "XXXX1112".to_string(),
+            begin_date: "2023-12-12".to_string(),
+            end_date: "2023-12-12".to_string(),
+        };
+        if let Ok(res) = camera.add(&mut car) {
+            assert_eq!(res, "OK");
+        };
+    }
+
+    #[test]
+    fn edit_car_success() {
+        let camera = Camera::new();
+        let mut car = Car {
+            number: "XXXX1112".to_string(),
+            begin_date: "2023-12-22".to_string(),
+            end_date: "2023-12-22".to_string(),
+        };
+        if let Ok(res) = camera.edit(&mut car) {
+            assert_eq!(res, "OK");
+        };
+    }
+
+    #[test]
+    fn remove_car_success() {
+        let camera = Camera::new();
+        let mut car = Car {
+            number: "XXXX1112".to_string(),
+            begin_date: "".to_string(),
+            end_date: "".to_string(),
+        };
+        if let Ok(res) = camera.remove(&mut car) {
+            assert_eq!(res, "OK");
+        };
+    }
 }
