@@ -86,7 +86,7 @@ impl Camera {
             if car.end_date == end_date {
                 let _ = &self.remove(&car)?;
                 println!("Номер {} удален", car.number);
-                thread::sleep(time::Duration::from_millis(500));
+                thread::sleep(time::Duration::from_millis(100));
             }
         }
         Ok("Удаление номеров закончено".to_string())
@@ -200,16 +200,20 @@ mod test {
     }
 
     #[test]
-    fn add_car_success() {
-        let camera = Camera::new();
-        let mut car = Car {
-            number: "XXXX1112".to_string(),
-            begin_date: "2023-12-12".to_string(),
-            end_date: "2023-12-12".to_string(),
-        };
-        if let Ok(res) = camera.add(&mut car) {
-            assert_eq!(res, "OK");
-        };
+    fn add_cars_success() {
+        for i in 1..30 {
+            let camera = Camera::new();
+            let number = format!("XXXX111{}", i);
+            let mut car = Car {
+                number,
+                begin_date: "2023-12-12".to_string(),
+                end_date: "2023-12-12".to_string(),
+            };
+            if let Ok(res) = camera.add(&mut car) {
+                assert_eq!(res, "OK");
+            };
+            thread::sleep(time::Duration::from_millis(100));
+        }
     }
 
     #[test]
@@ -226,15 +230,19 @@ mod test {
     }
 
     #[test]
-    fn remove_car_success() {
-        let camera = Camera::new();
-        let mut car = Car {
-            number: "XXXX1112".to_string(),
-            begin_date: "".to_string(),
-            end_date: "".to_string(),
-        };
-        if let Ok(res) = camera.remove(&mut car) {
-            assert_eq!(res, "OK");
-        };
+    fn remove_cars_success() {
+        for i in 1..30 {
+            let camera = Camera::new();
+            let number = format!("XXXX111{}", i);
+            let mut car = Car {
+                number,
+                begin_date: "2023-12-12".to_string(),
+                end_date: "2023-12-12".to_string(),
+            };
+            if let Ok(res) = camera.remove(&mut car) {
+                assert_eq!(res, "OK");
+            };
+            thread::sleep(time::Duration::from_millis(100));
+        }
     }
 }
