@@ -21,13 +21,11 @@ impl Camera {
         let username = get_env_var("CAMERA_USERNAME");
         let password = get_env_var("CAMERA_PASSWORD");
 
-        let camera = Camera {
+        Camera {
             ip,
             password,
             username,
-        };
-
-        camera
+        }
     }
     /// Get all cars numbers from camera.
     pub fn list_numbers(&self) -> Result<Vec<Car>, Error> {
